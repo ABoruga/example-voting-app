@@ -5,8 +5,8 @@ metadata:
 spec:
   replicas: 2
   selector:
-  matchLabels:
-    app: "dexikube-2a3f"
+    matchLabels:
+      app: "dexikube-2a3f"
   template:
     metadata:
       labels:
