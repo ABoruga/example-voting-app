@@ -1,0 +1,50 @@
+on: [push]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    
+    - uses: azure/docker-login@v1
+      with:
+        login-server: dexireg.azurecr.io
+        username: ${{ secrets.acr_dexireg_username }}
+        password: ${{ secrets.acr_dexireg_password }}
+    
+    - name: Build and push image to ACR
+      id: build-image
+      run: |
+        docker build "$GITHUB_WORKSPACE/result" -f  "result/Dockerfile" -t dexireg.azurecr.io/dexikube:${{ github.sha }}
+        docker push dexireg.azurecr.io/dexikube:${{ github.sha }}
+    
+    - uses: azure/k8s-set-context@v1
+      with:
+         kubeconfig: ${{ secrets.aks_dexikube_kubeConfig }}
+      id: login
+    
+    - name: Create namespace
+      run: |
+        namespacePresent=`kubectl get namespace | grep dexikubeaaa8 | wc -l`
+        if [ $namespacePresent -eq 0 ]
+        then
+            echo `kubectl create namespace dexikubeaaa8`
+        fi
+
+    - uses: azure/k8s-create-secret@v1
+      with:
+        namespace: dexikubeaaa8
+        container-registry-url: dexireg.azurecr.io
+        container-registry-username: ${{ secrets.acr_dexireg_username }}
+        container-registry-password: ${{ secrets.acr_dexireg_password }}
+        secret-name: dexikubedockerauth
+       
+    - uses: azure/k8s-deploy@v1
+      with:
+        namespace: dexikubeaaa8
+        manifests: |
+          manifests/deployment.yml
+          manifests/service.yml
+        images: |
+          dexireg.azurecr.io/dexikube:${{ github.sha }}
+        imagepullsecrets: |
+          dexikubedockerauth
