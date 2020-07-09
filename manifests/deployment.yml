@@ -1,0 +1,16 @@
+apiVersion : apps/v1beta1
+kind: Deployment
+metadata:
+  name: "dexikube-2a3f"
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: "dexikube-2a3f"
+    spec:
+      containers:
+        - name: "dexikube-2a3f"
+          image: "dexireg.azurecr.io/dexikube"
+          ports:
+          - containerPort: 80
